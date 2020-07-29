@@ -10,8 +10,9 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/omnisci/omniscidb/archive/v{{ version }}.tar.gz
-  sha256: 7587ee6dfd900dc23b1ba1f6357c94bf65a997a25e21ee364b3e5d871dddd6fc
+  path: ~/omniscidb
+  #url: https://github.com/omnisci/omniscidb/archive/v{{ version }}.tar.gz
+  #sha256: 7587ee6dfd900dc23b1ba1f6357c94bf65a997a25e21ee364b3e5d871dddd6fc
   patches:
     - skip-boost-libs-install.patch
 
@@ -38,6 +39,9 @@ requirements:
     - llvmdev 9
     - make
     - maven
+    - cython
+    - numpy =1.18.5
+    - pyarrow =0.16  
   host:
     # omniscidb <=5.2.2 is not arrow-cpp 0.17+ ready
     - arrow-cpp =0.16.*=*{{ build_ext }}
@@ -61,6 +65,7 @@ requirements:
     - openldap
     - openssl
     - snappy
+    - tbb-devel
     - thrift-cpp
   run:
     - boost-cpp
@@ -77,38 +82,8 @@ requirements:
 
 test:
   commands:
-    # Verify the activation scripts are in-place.
-    {% for state in ["activate", "deactivate"] %}
-    - test -f "${PREFIX}/etc/conda/{{ state }}.d/{{ PKG_NAME }}_{{ state }}.sh"
-    {% endfor %}
-    # Try using the activation scripts.
-    - |
-      if [[ -x "$(command -v omnisql)" ]]
-      then
-        echo "Found omnisql in PATH"
-      else
-        echo "omnisql not found in PATH(=$PATH)" && exit 1
-      fi
-      source ${PREFIX}/etc/conda/deactivate.d/{{ PKG_NAME }}_deactivate.sh
-      if [[ -x "$(command -v omnisql)" ]]
-      then
-        echo "Unexpectedly found omnisql in PATH(=$PATH) after deactivation"  && exit 1
-      else
-        echo "omnisql not in PATH after deactivation"
-      fi
-      source ${PREFIX}/etc/conda/activate.d/{{ PKG_NAME }}_activate.sh
-    # Test installation
     - omnisql -v
-    - which omnisci_initdb
     - which omnisci_server
-    - |
-      if [ -x "$(command -v nvidia-smi)" ]; then  # [cuda_compiler_version not in (undefined, "None")]
-        mkdir data && omnisci_initdb data
-        omnisci_server --version
-        rm -rf data
-      fi                                          # [cuda_compiler_version not in (undefined, "None")]
-    - which omnisci_insert_sample_data
-    - which startomnisci
 
 about:
   home: https://www.omnisci.com/
