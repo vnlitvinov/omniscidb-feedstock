@@ -4,7 +4,6 @@ set -ex
 
 # Free some disk space, see also
 # https://github.com/conda-forge/omniscidb-feedstock/issues/5
-rm /opt/conda/pkgs/*.tar.bz2
 df -h
 
 export EXTRA_CMAKE_OPTIONS=""
@@ -35,43 +34,7 @@ export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DCMAKE_C_COMPILER=${CC} -DCMAK
 # will be disabled:
 export RUN_TESTS=0
 
-if [[ ! -z "${cuda_compiler_version+x}" && "${cuda_compiler_version}" != "None" ]]
-then
-    export INSTALL_BASE=opt/omnisci-cuda
-    if [[ -z "${CUDA_HOME+x}" ]]
-    then
-        echo "cuda_compiler_version=${cuda_compiler_version} CUDA_HOME=$CUDA_HOME"
-        CUDA_GDB_EXECUTABLE=$(which cuda-gdb || exit 0)
-        if [[ -n "$CUDA_GDB_EXECUTABLE" ]]
-        then
-            CUDA_HOME=$(dirname $(dirname $CUDA_GDB_EXECUTABLE))
-        else
-            echo "Cannot determine CUDA_HOME: cuda-gdb not in PATH"
-            return 1
-        fi
-    fi
-    export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DENABLE_CUDA=on"
-    export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DCUDA_TOOLKIT_ROOT_DIR=$CUDA_HOME"
-    # Fixes NOTFOUND CUDA_CUDA_LIBRARY
-    export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DCMAKE_SYSROOT=$CONDA_BUILD_SYSROOT"
-
-    if [[ "$RUN_TESTS" == "2" ]]
-    then
-        if [[ -x "$(command -v nvidia-smi)" ]]
-        then
-            export RUN_TESTS=1
-        else
-            export RUN_TESTS=0
-        fi
-    fi
-else
-    export INSTALL_BASE=opt/omnisci-cpu
-    export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DENABLE_CUDA=off"
-    if [[ "$RUN_TESTS" == "2" ]]
-    then
-        export RUN_TESTS=1
-    fi
-fi
+export INSTALL_BASE=opt/omnisci-cpu
 
 if [[ "$RUN_TESTS" == "0" ]]
 then
@@ -83,14 +46,16 @@ fi
 
 export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DBoost_NO_BOOST_CMAKE=on"
 
-# As clang is used in the build process to compile
-# bytecode, we need to make clang aware of the
-# C++ headers provided by conda's GCC toolchain.
+#conda activate omnisci-dev-37
+
+
 . ${RECIPE_DIR}/get_cxx_include_path.sh
 export CPLUS_INCLUDE_PATH=$(get_cxx_include_path)
 
 mkdir -p build
 cd build
+
+#pip install "pyarrow==0.16"
 
 cmake -Wno-dev \
     -DCMAKE_PREFIX_PATH=$PREFIX \
@@ -102,6 +67,7 @@ cmake -Wno-dev \
     -DENABLE_JAVA_REMOTE_DEBUG=off \
     -DENABLE_PROFILER=off \
     -DPREFER_STATIC_LIBS=off \
+    -DENABLE_CUDA=off\
     -DENABLE_DBE=ON \
     -DENABLE_FSI=ON \
     $EXTRA_CMAKE_OPTIONS \
@@ -109,8 +75,15 @@ cmake -Wno-dev \
 
 make -j $CPU_COUNT
 
-if [[ "$RUN_TESTS" == "1" ]]
+
+if [[ "$RUN_TESTS" == "2" ]]
 then
+    # Omnisci UDF support uses CLangTool for parsing Load-time UDF C++
+    # code to AST. If the C++ code uses C++ std headers, we need to
+    # specify the locations of include directories:
+    . ${RECIPE_DIR}/get_cxx_include_path.sh
+    export CPLUS_INCLUDE_PATH=$(get_cxx_include_path)
+
     mkdir tmp
     $PREFIX/bin/initdb tmp
     make sanity_tests
@@ -121,48 +94,4 @@ fi
 
 make install
 
-# Remove build directory to free about 2.5 GB of disk space
-cd -
-rm -rf build
-
-cd $PREFIX/$INSTALL_BASE/bin
-ln -s initdb omnisci_initdb
-ln -s ../startomnisci startomnisci
-ln -s ../insert_sample_data omnisci_insert_sample_data
-cd -
-
-mkdir -p "${PREFIX}/etc/conda/activate.d"
-cat > "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh" <<EOF
-#!/bin/bash
-
-# Avoid cuda and cpu variants of omniscidb in the same environment.
-if [[ ! -z "\${PATH_CONDA_OMNISCIDB_BACKUP+x}" ]]
-then
-  echo "Unset PATH_CONDA_OMNISCIDB_BACKUP(=\${PATH_CONDA_OMNISCIDB_BACKUP}) when activating ${PKG_NAME} from \${CONDA_PREFIX}/${INSTALL_BASE}"
-  export PATH="\${PATH_CONDA_OMNISCIDB_BACKUP}"
-  unset PATH_CONDA_OMNISCIDB_BACKUP
-fi
-
-# Backup environment variables (only if the variables are set)
-if [[ ! -z "\${PATH+x}" ]]
-then
-  export PATH_CONDA_OMNISCIDB_BACKUP="\${PATH:-}"
-fi
-
-export PATH="\${PATH}:\${CONDA_PREFIX}/${INSTALL_BASE}/bin"
-EOF
-
-
-mkdir -p "${PREFIX}/etc/conda/deactivate.d"
-cat > "${PREFIX}/etc/conda/deactivate.d/${PKG_NAME}_deactivate.sh" <<EOF
-#!/bin/bash
-
-# Restore environment variables (if there is anything to restore)
-if [[ ! -z "\${PATH_CONDA_OMNISCIDB_BACKUP+x}" ]]
-then
-  export PATH="\${PATH_CONDA_OMNISCIDB_BACKUP}"
-  unset PATH_CONDA_OMNISCIDB_BACKUP
-fi
-
-EOF
-
+#conda deactivate
