@@ -9,7 +9,7 @@ package:
   version: {{ version }}
 
 source:
-  path: ~/omniscidb
+  path: ~/feedstock_root/omniscidb
 
 build:
   number: {{ number }}
