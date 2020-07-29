@@ -2,6 +2,9 @@
 
 set -ex
 
+# generate ~/.m2/settings.xml if proxy are set
+python ~/recipe_root/make-m2-proxy.py
+
 # Free some disk space, see also
 # https://github.com/conda-forge/omniscidb-feedstock/issues/5
 df -h
