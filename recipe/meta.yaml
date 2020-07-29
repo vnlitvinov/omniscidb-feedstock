@@ -10,8 +10,9 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/omnisci/omniscidb/archive/v{{ version }}.tar.gz
-  sha256: 7587ee6dfd900dc23b1ba1f6357c94bf65a997a25e21ee364b3e5d871dddd6fc
+  path: /localdisk/amelikad/omniscidb
+  #url: https://github.com/omnisci/omniscidb/archive/v{{ version }}.tar.gz
+  #sha256: 7587ee6dfd900dc23b1ba1f6357c94bf65a997a25e21ee364b3e5d871dddd6fc
   patches:
     - skip-boost-libs-install.patch
 
@@ -38,6 +39,9 @@ requirements:
     - llvmdev 9
     - make
     - maven
+    - cython
+    - numpy =1.18.5
+    - pyarrow =0.16
   host:
     # omniscidb <=5.2.2 is not arrow-cpp 0.17+ ready
     - arrow-cpp =0.16.*=*{{ build_ext }}
@@ -61,6 +65,7 @@ requirements:
     - openldap
     - openssl
     - snappy
+    - tbb-devel
     - thrift-cpp
   run:
     - boost-cpp
@@ -68,7 +73,7 @@ requirements:
     # omnscidb Load-time UDF support calls clang++
     - gxx_{{ target_platform }}
     - ncurses
-    - openjdk 8
+    - openjdk 8.*
     - xz
     - zlib
   run_constrained:
