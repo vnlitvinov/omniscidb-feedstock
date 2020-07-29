@@ -6,6 +6,7 @@ if such environment variables are set.
 '''
 
 import os
+import sys
 import re
 import errno
 
@@ -20,14 +21,18 @@ def simple_xml(name, sections):
 _made_ids = set()
 
 def gen_proxy(var_name):
-    if var_name not in os.environ:
+    value = os.environ.get(var_name, '')
+    if not value:
         return None
-    value = os.environ[var_name]
-    parsed = re.search(r'''((?P<protocol>[^:]+)://)?    # protocol followed by ://, optional
-        ((?P<username>[^:]+)(:(?P<password>[^@]+))?@)?  # user:password part, optional
-        (?P<host>[^@]+?)                                # hostname, which is basically everything but other known parts
-        (:(?P<port>\d+))?                               # port, optional
-        $''', value, re.VERBOSE).groupdict()
+    try:
+        parsed = re.search(r'''((?P<protocol>[^:]+)://)?    # protocol followed by ://, optional
+            ((?P<username>[^:]+)(:(?P<password>[^@]+))?@)?  # user:password part, optional
+            (?P<host>[^@]+?)                                # hostname, which is basically everything but other known parts
+            (:(?P<port>\d+))?                               # port, optional
+            $''', value, re.VERBOSE).groupdict()
+    except AttributeError:
+        sys.stderr.write('WARNING: unexpected format, could not parse $%s=%s\n' % (var_name, value))
+        return None
 
     if not parsed['host']:
         return None
