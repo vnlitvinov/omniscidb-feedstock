@@ -33,7 +33,7 @@ export EXTRA_CMAKE_OPTIONS="$EXTRA_CMAKE_OPTIONS -DCMAKE_C_COMPILER=${CC} -DCMAK
 #
 # Ideally, this should 2, but to save disk space, running sanity tests
 # will be disabled:
-export RUN_TESTS=2
+export RUN_TESTS=0
 
 if [[ ! -z "${cuda_compiler_version+x}" && "${cuda_compiler_version}" != "None" ]]
 then
@@ -102,6 +102,8 @@ cmake -Wno-dev \
     -DENABLE_JAVA_REMOTE_DEBUG=off \
     -DENABLE_PROFILER=off \
     -DPREFER_STATIC_LIBS=off \
+    -DENABLE_DBE=ON \
+    -DENABLE_FSI=ON \
     $EXTRA_CMAKE_OPTIONS \
     ..
 
