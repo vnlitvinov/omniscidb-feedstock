@@ -1,4 +1,4 @@
 [submodule "omniscidb"]
 	path = omniscidb
 	url = https://github.com/intel-go/omniscidb.git
-	branch = modin
+	branch = modin-conda-fix
