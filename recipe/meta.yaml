@@ -1,11 +1,11 @@
-{% set version = "5.2.2" %}
-{% set number = "2" %}
+{% set version = "0.1" %}
+{% set number = "1" %}
 {% set build_ext_version = "1.0.0" %}
 {% set build_ext = "cpu" %}
 {% set build_string = "h{}_{}_{}".format(PKG_HASH, number, build_ext) %}
 
 package:
-  name: omniscidb
+  name: omnisci-engine
   version: {{ version }}
 
 source:
@@ -22,7 +22,7 @@ build:
 
 requirements:
   build:
-    - {{ compiler('cgo') }}
+#    - {{ compiler('cgo') }}
     - {{ compiler('cxx') }}
     - clangdev
     - clangxx
@@ -59,6 +59,7 @@ requirements:
     - thrift-cpp
     - tbb-devel
   run:
+    - pyarrow =0.16
     - boost-cpp
     - bzip2
     # omnscidb Load-time UDF support calls clang++
