@@ -98,8 +98,8 @@ fi
 make install
 
 # Remove build directory to free about 2.5 GB of disk space
-cd -
-rm -rf build
+#cd -
+#rm -rf build
 
 cd $PREFIX/$INSTALL_BASE/bin
 ln -s initdb omnisci_initdb

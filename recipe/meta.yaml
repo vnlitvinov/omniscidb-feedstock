@@ -30,10 +30,10 @@ requirements:
     - llvmdev 9
     - make
     - maven
-    - cython
+  host:
     - numpy =1.18.5
     - pyarrow =0.16
-  host:
+    - cython
     # omniscidb <=5.2.2 is not arrow-cpp 0.17+ ready
     - arrow-cpp =0.16
     - bisonpp
